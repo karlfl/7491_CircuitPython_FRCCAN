@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 Karl Fleischmann for Team 7491 Cyber Soldiers
+#
+# SPDX-License-Identifier: MIT
+
+Adafruit-Blinka
+adafruit-circuitpython-busdevice
+adafruit_mcp2515
