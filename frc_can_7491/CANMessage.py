@@ -9,8 +9,8 @@ FRC CAN Bus CAN Message class.
 * Author(s): Karl Fleischmann
 """
 
-from .frc_utils import frc_can
-from .frc_enums import frc_manufacturer
+from .frc_can_utils import frc_can
+from .frc_can_enums import frc_manufacturer
 
 
 class RobotHeartbeat:

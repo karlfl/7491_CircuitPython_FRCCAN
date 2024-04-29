@@ -4,7 +4,6 @@
 import board
 from digitalio import DigitalInOut, Direction
 
-from frc_can_7491 import can_7491_class, can_7419_index_info
 from frc_can_7491 import frc_device_type, frc_manufacturer
 from frc_can_7491 import CANDevice
 from frc_can_7491 import CANMessage
@@ -18,13 +17,10 @@ canDevice = CANDevice(
     dev_number=5,
 )
 
-# TODO add routes to handle device number changes
-# TODO define API IDs
-
 # 'Heartbeat' messages
 @canDevice.route(msg_type=CANMessage.Type.Heartbeat)
 def heartbeat(message:CANMessage):  # pylint: disable=unused-argument
-    # print("Heartbeat")
+    print("Heartbeat")
     # print("System Watchdog", message.Heartbeat.SystemWatchdog)
     return
 
@@ -40,7 +36,7 @@ def broadcast(message:CANMessage):  # pylint: disable=unused-argument
 def update_status(message:CANMessage):  # pylint: disable=unused-argu4117
     # immediately send a status update 
     canDevice.send_message(
-        can_7491_class.Informational, can_7419_index_info.StatusPost, message=b"Status01"
+        0, 1, message=b"Status01"
     )
     print("Device", hex(message.api_id))
     return

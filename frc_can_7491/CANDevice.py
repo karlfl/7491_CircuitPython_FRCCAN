@@ -11,8 +11,8 @@ from adafruit_mcp2515 import MCP2515 as CAN
 from adafruit_mcp2515.canio import Message, RemoteTransmissionRequest, Match, BusState
 
 from .CANMessage import CANMessage
-from .frc_enums import frc_app_ids
-from .frc_utils import frc_can
+from .frc_can_enums import frc_app_ids
+from .frc_can_utils import frc_can
 
 
 class CANDevice:
