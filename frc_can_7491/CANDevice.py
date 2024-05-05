@@ -24,6 +24,7 @@ class CANDevice:
         baud_rate=1_000_000,
         spi=board.SPI(),
         cs=board.CAN_CS,
+        debug=False
     ) -> None:
 
         print("******************************************************")
@@ -38,7 +39,7 @@ class CANDevice:
         # setup the CAN Bus
         self.cs = DigitalInOut(cs)
         self.cs.switch_to_output()
-        self.can_bus = CAN(spi, self.cs, baudrate=baud_rate, debug=False)
+        self.can_bus = CAN(spi, self.cs, baudrate=baud_rate, debug=debug)
 
         self.handlers = {}
 
@@ -46,6 +47,7 @@ class CANDevice:
         self.dev_type = dev_type
         self.dev_num = dev_number
 
+        self.debug = debug
         self.enabled = False
 
         # create a device filter (type, mfg and number) to use when listening for packets
@@ -99,9 +101,8 @@ class CANDevice:
             except RuntimeError as ex:
                 print("Unexpected error:", ex)
         else:
-            print("CAN Bus is not active", self.can_bus.state)
+            print("CAN Bus is not active. Bus State:", self.can_bus.state)
 
-        # print("Send Success:", send_success)
         return send_success
 
     def start_listener(self):
@@ -149,38 +150,33 @@ class CANDevice:
         for _i in range(message_count):
             msg = self.listener.receive()
 
+            # Regular CAN Messages...
             if isinstance(msg, Message):
-                (
-                    device_type,
-                    mfg_code,
-                    api_class,
-                    api_index,
-                    api_id,
-                    device_number,
-                ) = frc_can.can_id.parse(msg.id)
+                message = CANMessage(raw_msg_id=msg.id, raw_msg_data=msg.data)
 
+                # Does a routes exists for this message...
+                route = self.handlers.get(message)
+                if route:
+                    # call it
+                    route(message)
+                else:
+                    # If not log an error.
+                    if message.api_id == frc_app_ids.heartbeat:
+                        print("Handler Not Defined for FRC Heartbeat messages")
+                        print(bin(msg.id), bin(int.from_bytes(msg.data, sys.byteorder)))
+                    elif message.api_class == frc_app_ids.broadcast:
+                        print("Handler Not Defined for FRC Broadcast messages")
+                        print(bin(msg.id), bin(int.from_bytes(msg.data, sys.byteorder)))
+                    else:
+                        print(
+                            "Handler Not Defined. API ID:",
+                            hex(message.api_id),
+                            "Message Type:",
+                            message.msg_type,
+                            bin(msg.id),
+                        )
+
+            # Remote Transmission Requests (these don't have can data?)
             if isinstance(msg, RemoteTransmissionRequest):
                 print("RTR length:", msg.length)
 
-            message = CANMessage(raw_msg_id=msg.id, raw_msg_data=msg.data)
-
-            # If a routes exists for this message...
-            route = self.handlers.get(message)
-            if route:
-                # call it
-                route(message)
-            else:
-                # If not log an error.
-                if message.api_id == frc_app_ids.heartbeat:
-                    print("Handler Not Defined for FRC Heartbeat messages")
-                elif message.api_id == frc_app_ids.broadcast:
-                    print("Handler Not Defined for FRC Broadcast messages")
-                    print(bin(msg.id), bin(int.from_bytes(msg.data, sys.byteorder)))
-                else:
-                    print(
-                        "Handler Not Defined. API ID:",
-                        hex(message.api_id),
-                        "Message Type:",
-                        message.msg_type,
-                        bin(msg.id),
-                    )
