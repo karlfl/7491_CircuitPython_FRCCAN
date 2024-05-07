@@ -10,11 +10,10 @@ except ImportError:
 from adafruit_mcp2515 import MCP2515 as CAN
 from adafruit_mcp2515.canio import Message, RemoteTransmissionRequest, Match, BusState
 
-from .CANMessage import CANMessage
-from .frc_can_enums import frc_app_ids
-from .frc_can_utils import frc_can
+from frc_can_7491 import CANMessage
+from frc_can_7491 import FRCAppId, FRCFilter, FRCMask
 
-
+# CAN Device Class
 class CANDevice:
     def __init__(
         self,
@@ -24,7 +23,7 @@ class CANDevice:
         baud_rate=1_000_000,
         spi=board.SPI(),
         cs=board.CAN_CS,
-        debug=False
+        debug=False,
     ) -> None:
 
         print("******************************************************")
@@ -50,19 +49,22 @@ class CANDevice:
         self.debug = debug
         self.enabled = False
 
-        # create a device filter (type, mfg and number) to use when listening for packets
-        # this will ignore the API_ID portion of the extended CAN id used by FRC
-        # see https://docs.wpilib.org/en/stable/docs/software/can-devices/can-addressing.html for more details
-        self.device_filter = frc_can.build_device_filter(
+        self.device_filter = self.build_device_filter(
             dev_manufacturer, dev_type, dev_number
         )
+
+    # create a device filter (type, mfg and number)to use when listening for packets
+    # this will ignore the API_ID portion of the extended CAN id used by FRC
+    # see https://docs.wpilib.org/en/stable/docs/software/can-devices/can-addressing.html for more details
+    def build_device_filter(self, dev_manufacturer, dev_type, dev_number):
+        return (dev_type << 24) | (dev_manufacturer << 16) | (0x00 << 6) | (dev_number)
 
     def get_device_filter_bin(self):
         return bin(self.device_filter)
 
     def route(
         self,
-        api_id: int = frc_app_ids.heartbeat,
+        api_id: int = FRCAppId.heartbeat,
         msg_type: CANMessage.Type = CANMessage.Type.Device,
     ):
         """Decorator used to add a route to handle incoming CAN Messages.
@@ -79,7 +81,7 @@ class CANDevice:
         """
 
         if msg_type == CANMessage.Type.Broadcast:
-            api_id = frc_app_ids.broadcast
+            api_id = FRCAppId.broadcast
 
         def route_decorator(func: Callable) -> Callable:
             self.handlers[CANMessage(api_id, msg_type)] = func
@@ -90,11 +92,14 @@ class CANDevice:
     def send_message(self, apiClass: int, apiIndex: int, message: bytes):
         send_success = False
 
-        msg_id = frc_can.can_id.build(
+        msg_id = CANMessage.assemble_message_id(
             self.dev_type, self.dev_mfg, int(apiClass), int(apiIndex), self.dev_num
         )
+
+        # construct MCP2515 message
         canMessage = Message(id=msg_id, data=message, extended=True)
 
+        # depending on the can bus state, send the message
         if self.can_bus.state in (BusState.ERROR_ACTIVE, BusState.ERROR_WARNING):
             try:
                 send_success = self.can_bus.send(canMessage)
@@ -106,34 +111,40 @@ class CANDevice:
         return send_success
 
     def start_listener(self):
-        """the MCP2515 has slots for 2 masks and 6 filters
-        # mask-0 has 2 filter slots, mask-1 has 4 filter slots
-        # you can use up to 6 matches (match = mask & filter)
-        # the order of the match objects below matter
-        # the first mask used in the array can only have 2 filters
-        # the second mask used can have up to 4 filters
-        # not passing in a mask will use an 'exact match' mask of all 1's
-        # read the MCP2515 datasheet for more details on masks and filters.
+        """
+        Setup the listener on the CAN bus using the MCP2515 library.
+
+        The MCP2515 has slots for 2 masks and 6 filters.
+        Mask-0 has 2 filter slots, Mask-1 has 4 filter slots.
+        You can use up to 6 matches (match = mask & filter).
+        The order of the match objects below matter.
+        The first mask used in the array can only have 2 filters.
+        The second mask used can have up to 4 filters.
+        Not passing in a mask will use an 'exact match' mask of all 1's
+
+        Read the MCP2515 datasheet for more details on masks and filters.
         """
         self.listener = self.can_bus.listen(
             matches=[
-                # Match FRC RIO Heartbeat using default mask (exact match)
+                # Match FRC RoboRIO Heartbeat using default mask (exact match)
                 Match(
-                    frc_can.matching.filters.heartbeat,
+                    FRCFilter.heartbeat,
                     extended=True,
                 ),
-                # FRC Broadcast messages use the API_Index bits to indicate the message type
-                # the remaining bits are set to 0
-                # so this filter uses the type, manufacture and number match mask
+                # FRC Broadcast messages use the API_Index bits to indicate the broadcast message
+                # the remaining bits are set to 0.  Therefore this match can use the same mask as the 
+                # device speficic one which only looks at only the type, manufacturer and number.
                 Match(
-                    frc_can.matching.filters.broadcast,
-                    mask=frc_can.matching.masks.type_mfg_num,
+                    FRCFilter.broadcast,
+                    mask=FRCMask.type_mfg_num,
                     extended=True,
                 ),
-                # Device Match uses the type, manufacture and number match mask
+                # The remaining messages we're concerned with are the device specific messages.
+                # This match will use device mask to match on only the type, manufacture and number of 
+                # this device
                 Match(
                     self.device_filter,
-                    mask=frc_can.matching.masks.type_mfg_num,
+                    mask=FRCMask.type_mfg_num,
                     extended=True,
                 ),
             ],
@@ -161,10 +172,10 @@ class CANDevice:
                     route(message)
                 else:
                     # If not log an error.
-                    if message.api_id == frc_app_ids.heartbeat:
+                    if message.api_id == FRCAppId.heartbeat:
                         print("Handler Not Defined for FRC Heartbeat messages")
                         print(bin(msg.id), bin(int.from_bytes(msg.data, sys.byteorder)))
-                    elif message.api_class == frc_app_ids.broadcast:
+                    elif message.api_class == FRCAppId.broadcast:
                         print("Handler Not Defined for FRC Broadcast messages")
                         print(bin(msg.id), bin(int.from_bytes(msg.data, sys.byteorder)))
                     else:
@@ -179,4 +190,3 @@ class CANDevice:
             # Remote Transmission Requests (these don't have can data?)
             if isinstance(msg, RemoteTransmissionRequest):
                 print("RTR length:", msg.length)
-

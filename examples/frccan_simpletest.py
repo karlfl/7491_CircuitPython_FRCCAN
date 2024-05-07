@@ -4,27 +4,25 @@
 import board
 from digitalio import DigitalInOut, Direction
 
-from frc_can_7491 import frc_device_type, frc_manufacturer
-from frc_can_7491 import CANDevice
-from frc_can_7491 import CANMessage
+from frc_can_7491 import CANDevice, FRCDeviceType, FRCManufacturer,CANMessage
 
 led = DigitalInOut(board.LED)
 led.direction = Direction.OUTPUT
 
 canDevice = CANDevice(
-    dev_type=frc_device_type.IOBreakout,
-    dev_manufacturer=frc_manufacturer.TeamUse,
+    dev_type=FRCDeviceType.IOBreakout,
+    dev_manufacturer=FRCManufacturer.TeamUse,
     dev_number=5,
 )
 
-# 'Heartbeat' messages
+# Heartbeat messages
 @canDevice.route(msg_type=CANMessage.Type.Heartbeat)
 def heartbeat(message:CANMessage):  # pylint: disable=unused-argument
     print("Heartbeat")
     # print("System Watchdog", message.Heartbeat.SystemWatchdog)
     return
 
-# 'Broadcast' messages
+# Broadcast messages
 @canDevice.route(msg_type=CANMessage.Type.Broadcast)
 def broadcast(message:CANMessage):  # pylint: disable=unused-argument
     print("Broadcast")
