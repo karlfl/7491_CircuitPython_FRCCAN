@@ -3,7 +3,7 @@ Introduction
 
 
 .. image:: https://readthedocs.org/projects/7491-circuitpython-frccan/badge/?version=latest
-    :target: https://circuitpython-frccan.readthedocs.io/
+    :target: https://7491-circuitpython-frccan.readthedocs.io/
     :alt: Documentation Status
 
 
