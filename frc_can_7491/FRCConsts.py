@@ -1,3 +1,13 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 Karl Fleischmann for FRC Team 7411 Cyber Soldiers
+#
+# SPDX-License-Identifier: MIT
+"""
+`frc_can.CANMessage`
+====================================================
+FRC CAN Bus CAN Message class.
+
+* Author(s): Karl Fleischmann
+"""
 # enumerations
 class FRCAppId:  # pylint: disable=too-few-public-methods
     """FRCAppId Class"""
