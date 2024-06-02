@@ -10,14 +10,14 @@ FRC CAN Bus CAN Message class.
 """
 # enumerations
 class FRCAppId:  # pylint: disable=too-few-public-methods
-    """FRCAppId Class"""
+    """FRC AppId Codes for Broadcast and Heartbeat Class"""
 
     broadcast: int = 0x0
     heartbeat: int = 0x61
 
 
 class FRCDeviceType:  # pylint: disable=too-few-public-methods
-    """FRCDeviceType Class"""
+    """FRC DeviceType Codes Class"""
 
     BroadcastMessages = 0
     RobotController = 1
@@ -35,7 +35,7 @@ class FRCDeviceType:  # pylint: disable=too-few-public-methods
 
 
 class FRCManufacturer:  # pylint: disable=too-few-public-methods
-    """FRCManufacturer Class"""
+    """FRC Manufacturer Codes Class"""
 
     Broadcast = 0
     NationalInstruments = 1
@@ -57,7 +57,7 @@ class FRCManufacturer:  # pylint: disable=too-few-public-methods
 
 
 class FRCBroadcast:  # pylint: disable=too-few-public-methods
-    """FRCBroadcast Class"""
+    """FRC Broadcast Message Code Class"""
 
     Disable = 0
     SystemHalt = 1
@@ -73,7 +73,7 @@ class FRCBroadcast:  # pylint: disable=too-few-public-methods
 
 
 class FRCMask:  # pylint: disable=too-few-public-methods
-    """FRCMask Class"""
+    """FRC Bit Masks Class"""
 
     # when using match masks in CAN a bit value of ...
     #   1 = must match filter on this bit
@@ -87,7 +87,7 @@ class FRCMask:  # pylint: disable=too-few-public-methods
 
 
 class FRCFilter:  # pylint: disable=too-few-public-methods
-    """FRCFilter Class"""
+    """FRC CAN ID Filter Class"""
 
     # Periodic Heartbeat CAN ID filter
     # Type= 1 (Robot Controller)
